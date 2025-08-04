@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Browser compatibility fixes */
+* {
+  box-sizing: border-box;
+}
+
+/* Fix for older browsers */
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+/* Flexbox fallbacks for older browsers */
+.flex {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.items-center {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+}
+
+.justify-center {
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+
+/* Grid fallbacks */
+@supports not (display: grid) {
+  .grid {
+    display: block;
+  }
+  
+  .grid > * {
+    display: inline-block;
+    vertical-align: top;
+    width: 100%;
+  }
+  
+  @media (min-width: 768px) {
+    .md\\:grid-cols-2 > * {
+      width: 50%;
+    }
+    
+    .md\\:grid-cols-4 > * {
+      width: 25%;
+    }
+  }
+}
