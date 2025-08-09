@@ -527,7 +527,7 @@ const ScanAttendance = ({ user, courses, onAttendanceMarked }) => {
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">2</span>
-            Click "Start Attendance Session" to begin
+            Click "Start Attendance Session\" to begin
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">3</span>
@@ -543,11 +543,11 @@ const ScanAttendance = ({ user, courses, onAttendanceMarked }) => {
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">6</span>
-            Click "End Session" when finished - CSV file will be automatically downloaded
+            Click "End Session\" when finished - CSV file will be automatically downloaded
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">7</span>
-            Use "Download CSV" button to get attendance data during the session
+            Use "Download CSV\" button to get attendance data during the session
           </li>
         </ol>
       </div>
