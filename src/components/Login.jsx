@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, LogIn } from 'lucide-react';
-import { User as UserType } from '../App';
 
-interface LoginProps {
-  onLogin: (user: UserType) => void;
-}
-
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState<'student' | 'lecturer'>('student');
+  const [userType, setUserType] = useState('student');
 
   // Mock users for demo purposes
-  const mockUsers: UserType[] = [
+  const mockUsers = [
     {
       id: '1',
       name: 'Chiyembekezo Daka',
@@ -35,7 +30,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   ];
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     
     // Simple demo login - in production, this would authenticate against a backend
@@ -44,7 +39,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin(user);
     } else {
       // Create a demo user based on selected type
-      const demoUser: UserType = {
+      const demoUser = {
         id: Date.now().toString(),
         name: userType === 'student' ? 'Demo Student' : 'Demo Lecturer',
         email,

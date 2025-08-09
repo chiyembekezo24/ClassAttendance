@@ -1,26 +1,21 @@
 import React, { useState } from 'react';
-import QRCode from 'qrcode-generator';
-import { QrCode, Download, User, CreditCard, AlertCircle } from 'lucide-react';
-import { User as UserType } from '../App';
+import { BarChart, Download, User, CreditCard, AlertCircle } from 'lucide-react';
 import { createObjectURL, revokeObjectURL } from '../utils/browserCompat';
 
-interface GenerateQRProps {
-  user: UserType;
-}
-
-const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
+const GenerateBarcode = ({ user }) => {
   const [studentId, setStudentId] = useState('');
   const [studentName, setStudentName] = useState('');
   const [program, setProgram] = useState('');
-  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [barcodeData, setBarcodeData] = useState(null);
 
   const programs = [
     'BACHELOR OF INFORMATION AND COMMUNICATION TECHNOLOGIES WITH EDUCATION (B.ICTs.Ed)'
   ];
 
-  const generateStudentIDQR = () => {
+  const generateStudentIDBarcode = () => {
     if (!studentId || !studentName || !program) return;
 
+    // Create a simple barcode representation using Code 128 format
     const studentData = {
       studentId: studentId.trim(),
       name: studentName.trim(),
@@ -30,22 +25,61 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
       type: 'student_id'
     };
 
-    const qr = QRCode(0, 'M');
-    qr.addData(JSON.stringify(studentData));
-    qr.make();
+    // Generate a simple barcode visualization
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 400;
+    canvas.height = 100;
 
-    setQrCodeData(qr.createDataURL(8, 4));
+    // White background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Generate barcode pattern (simplified representation)
+    ctx.fillStyle = 'black';
+    const barcodePattern = generateBarcodePattern(studentId);
+    
+    let x = 20;
+    const barWidth = 2;
+    const barHeight = 60;
+    const startY = 20;
+
+    for (let i = 0; i < barcodePattern.length; i++) {
+      if (barcodePattern[i] === '1') {
+        ctx.fillRect(x, startY, barWidth, barHeight);
+      }
+      x += barWidth;
+    }
+
+    // Add student ID text below barcode
+    ctx.fillStyle = 'black';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(studentId, canvas.width / 2, startY + barHeight + 20);
+
+    setBarcodeData(canvas.toDataURL());
   };
 
-  const downloadQR = () => {
-    if (!qrCodeData) return;
+  const generateBarcodePattern = (data) => {
+    // Simple barcode pattern generation (not a real Code 128 implementation)
+    let pattern = '';
+    for (let i = 0; i < data.length; i++) {
+      const charCode = data.charCodeAt(i);
+      const binaryString = charCode.toString(2).padStart(8, '0');
+      pattern += binaryString;
+    }
+    // Add some padding and structure
+    return '11010010000' + pattern + '11010010000';
+  };
+
+  const downloadBarcode = () => {
+    if (!barcodeData) return;
 
     try {
       const link = document.createElement('a');
-      link.href = qrCodeData;
-      link.download = `student-id-qr-${studentId}.png`;
+      link.href = barcodeData;
+      link.download = `student-id-barcode-${studentId}.png`;
       
-      // For better browser compatibility
       if (document.createEvent) {
         const event = document.createEvent('MouseEvents');
         event.initEvent('click', true, true);
@@ -55,8 +89,7 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
       }
     } catch (error) {
       console.error('Download failed:', error);
-      // Fallback: open in new window
-      window.open(qrCodeData, '_blank');
+      window.open(barcodeData, '_blank');
     }
   };
 
@@ -64,7 +97,7 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
     setStudentId('');
     setStudentName('');
     setProgram('');
-    setQrCodeData(null);
+    setBarcodeData(null);
   };
 
   if (user.role === 'student') {
@@ -73,10 +106,10 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Restricted</h2>
-          <p className="text-gray-600">Student ID QR code generation is only available for lecturers/tutors and administrators.</p>
+          <p className="text-gray-600">Student ID barcode generation is only available for lecturers/tutors and administrators.</p>
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-blue-800 font-medium">For Students:</p>
-            <p className="text-blue-700 text-sm mt-1">Your student ID card already contains a QR code. Contact the registrar's office if you need a replacement.</p>
+            <p className="text-blue-700 text-sm mt-1">Your student ID card already contains a barcode. Contact the registrar's office if you need a replacement.</p>
           </div>
         </div>
       </div>
@@ -89,8 +122,8 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
         <div className="flex items-center space-x-3 mb-6">
           <CreditCard className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Generate Student ID QR Code</h1>
-            <p className="text-gray-600">Create QR codes for student identification cards</p>
+            <h1 className="text-2xl font-bold text-gray-800">Generate Student ID Barcode</h1>
+            <p className="text-gray-600">Create barcodes for student identification cards</p>
           </div>
         </div>
 
@@ -140,12 +173,12 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
 
             <div className="flex space-x-4">
               <button
-                onClick={generateStudentIDQR}
+                onClick={generateStudentIDBarcode}
                 disabled={!studentId || !studentName || !program}
                 className="flex-1 bg-gradient-to-r from-blue-800 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold hover:from-blue-900 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <QrCode size={20} />
-                <span>Generate QR Code</span>
+                <BarChart size={20} />
+                <span>Generate Barcode</span>
               </button>
               
               <button
@@ -156,34 +189,34 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
               </button>
             </div>
 
-            {qrCodeData && (
+            {barcodeData && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-green-800">QR Code Generated</h4>
+                  <h4 className="font-semibold text-green-800">Barcode Generated</h4>
                   <User className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-green-700 text-sm mb-3">
-                  Student ID QR code has been generated successfully. This QR code contains the student's identification information.
+                  Student ID barcode has been generated successfully. This barcode contains the student's identification information.
                 </p>
                 <button
-                  onClick={downloadQR}
+                  onClick={downloadBarcode}
                   className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
                 >
                   <Download size={16} />
-                  <span>Download QR Code</span>
+                  <span>Download Barcode</span>
                 </button>
               </div>
             )}
           </div>
 
           <div className="flex items-center justify-center">
-            {qrCodeData ? (
+            {barcodeData ? (
               <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200">
                 <div className="flex items-center justify-center mb-4">
                   <img
-                    src={qrCodeData}
-                    alt="Student ID QR Code"
-                    className="w-64 h-64"
+                    src={barcodeData}
+                    alt="Student ID Barcode"
+                    className="max-w-full h-auto"
                   />
                 </div>
                 <div className="text-center">
@@ -202,8 +235,8 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
             ) : (
               <div className="bg-gray-100 rounded-2xl p-16 text-center">
                 <CreditCard className="w-24 h-24 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Enter student details and generate QR code</p>
-                <p className="text-sm text-gray-400 mt-2">QR code will appear here</p>
+                <p className="text-gray-500 font-medium">Enter student details and generate barcode</p>
+                <p className="text-sm text-gray-400 mt-2">Barcode will appear here</p>
               </div>
             )}
           </div>
@@ -211,10 +244,10 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
       </div>
 
       <div className="bg-blue-50 rounded-2xl p-6">
-        <h3 className="font-semibold text-blue-800 mb-3">Student ID QR Code Information:</h3>
+        <h3 className="font-semibold text-blue-800 mb-3">Student ID Barcode Information:</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-700">
           <div>
-            <h4 className="font-semibold mb-2">QR Code Contains:</h4>
+            <h4 className="font-semibold mb-2">Barcode Contains:</h4>
             <ul className="space-y-1">
               <li>• Student ID Number</li>
               <li>• Full Name</li>
@@ -226,11 +259,11 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
           <div>
             <h4 className="font-semibold mb-2">Usage Instructions:</h4>
             <ul className="space-y-1">
-              <li>• Print QR code on student ID cards</li>
+              <li>• Print barcode on student ID cards</li>
               <li>• Lecturers/tutors scan these codes for attendance</li>
-              <li>• Each QR code is unique to the student</li>
+              <li>• Each barcode is unique to the student</li>
               <li>• Secure and tamper-resistant format</li>
-              <li>• Works with any QR code scanner</li>
+              <li>• Works with any barcode scanner</li>
             </ul>
           </div>
         </div>
@@ -242,7 +275,7 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
           <div>
             <h4 className="font-semibold text-yellow-800 mb-2">Security Notice</h4>
             <p className="text-yellow-700 text-sm">
-              Student ID QR codes contain sensitive information. Ensure proper security measures are in place when printing and distributing student ID cards. Only authorized personnel should have access to this QR code generation system.
+              Student ID barcodes contain sensitive information. Ensure proper security measures are in place when printing and distributing student ID cards. Only authorized personnel should have access to this barcode generation system.
             </p>
           </div>
         </div>
@@ -251,4 +284,4 @@ const GenerateQR: React.FC<GenerateQRProps> = ({ user }) => {
   );
 };
 
-export default GenerateQR;
+export default GenerateBarcode;

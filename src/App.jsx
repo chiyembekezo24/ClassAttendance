@@ -3,54 +3,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import ScanAttendance from './components/ScanAttendance';
-import GenerateQR from './components/GenerateQR';
+import GenerateBarcode from './components/GenerateBarcode';
 import AttendanceHistory from './components/AttendanceHistory';
 import StudentManagement from './components/StudentManagement';
 import Login from './components/Login';
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'student' | 'lecturer' | 'admin';
-  studentId?: string;
-  program?: string;
-}
-
-export interface AttendanceRecord {
-  id: string;
-  studentId: string;
-  studentName: string;
-  courseCode: string;
-  courseName: string;
-  timestamp: Date;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  status: 'present' | 'late' | 'absent';
-  scannedBy: string; // ID of instructor who scanned the student ID
-}
-
-export interface Course {
-  id: string;
-  code: string;
-  name: string;
-  lecturer: string;
-  location: string;
-  schedule: string;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
-  isActive: boolean; // Whether attendance is currently being taken
-  sessionStartTime?: Date; // When attendance session started
-}
-
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [courses] = useState<Course[]>([
+  const [user, setUser] = useState(null);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [courses] = useState([
     {
       id: '1',
       code: 'ICT4010',
@@ -80,8 +41,8 @@ function App() {
     }
   ]);
 
-  const addAttendanceRecord = (record: Omit<AttendanceRecord, 'id'>) => {
-    const newRecord: AttendanceRecord = {
+  const addAttendanceRecord = (record) => {
+    const newRecord = {
       ...record,
       id: Date.now().toString()
     };
@@ -120,7 +81,7 @@ function App() {
             />
             <Route 
               path="/generate" 
-              element={<GenerateQR user={user} courses={courses} />} 
+              element={<GenerateBarcode user={user} courses={courses} />} 
             />
             <Route 
               path="/history" 

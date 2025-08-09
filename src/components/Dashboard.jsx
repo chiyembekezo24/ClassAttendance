@@ -1,14 +1,7 @@
 import React from 'react';
 import { Users, BookOpen, Calendar, TrendingUp, Clock, MapPin } from 'lucide-react';
-import { User, AttendanceRecord, Course } from '../App';
 
-interface DashboardProps {
-  user: User;
-  attendanceRecords: AttendanceRecord[];
-  courses: Course[];
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ user, attendanceRecords, courses }) => {
+const Dashboard = ({ user, attendanceRecords, courses }) => {
   const userAttendanceRecords = user.role === 'student' 
     ? attendanceRecords.filter(record => record.studentId === user.studentId)
     : attendanceRecords;
@@ -114,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, attendanceRecords, courses 
               <div className="text-center py-8 text-gray-500">
                 <Clock size={48} className="mx-auto mb-4 opacity-50" />
                 <p>No attendance records yet</p>
-                <p className="text-sm">Start scanning QR codes to track attendance</p>
+                <p className="text-sm">Start scanning barcodes to track attendance</p>
               </div>
             )}
           </div>
@@ -128,7 +121,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, attendanceRecords, courses 
           {user.role === 'lecturer' && (
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-800 font-medium">
-                💡 Tip: Use the "Scan Student ID" feature to take attendance by scanning student ID cards
+                💡 Tip: Use the "Scan Student ID" feature to take attendance by scanning student ID barcodes
               </p>
             </div>
           )}

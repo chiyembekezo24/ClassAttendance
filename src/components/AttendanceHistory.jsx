@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import { Calendar, Search, Filter, Download, TrendingUp, Clock, MapPin } from 'lucide-react';
-import { User, AttendanceRecord } from '../App';
 import { createObjectURL, revokeObjectURL } from '../utils/browserCompat';
 
-interface AttendanceHistoryProps {
-  user: User;
-  attendanceRecords: AttendanceRecord[];
-}
-
-const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ user, attendanceRecords }) => {
+const AttendanceHistory = ({ user, attendanceRecords }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'present' | 'late' | 'absent'>('all');
-  const [filterCourse, setFilterCourse] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterCourse, setFilterCourse] = useState('all');
 
   const userRecords = user.role === 'student'
     ? attendanceRecords.filter(record => record.studentId === user.studentId)
@@ -171,7 +165,7 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ user, attendanceR
           <div className="flex space-x-4">
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
+              onChange={(e) => setFilterStatus(e.target.value)}
               className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
             >
               <option value="all">All Status</option>

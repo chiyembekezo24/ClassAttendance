@@ -1,30 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
-import { QrCode, Camera, MapPin, CheckCircle, XCircle, AlertCircle, BookOpen, Clock, Users } from 'lucide-react';
-import { User, Course, AttendanceRecord } from '../App';
+import Quagga from 'quagga';
+import { BarChart, Camera, MapPin, CheckCircle, XCircle, AlertCircle, BookOpen, Clock, Users } from 'lucide-react';
 import { getLocation, createObjectURL, revokeObjectURL, checkBrowserSupport } from '../utils/browserCompat';
 
-interface ScanAttendanceProps {
-  user: User;
-  courses: Course[];
-  onAttendanceMarked: (record: Omit<AttendanceRecord, 'id'>) => void;
-}
-
-const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttendanceMarked }) => {
+const ScanAttendance = ({ user, courses, onAttendanceMarked }) => {
   const [isScanning, setIsScanning] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<string>('');
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const [scanStatus, setScanStatus] = useState<'idle' | 'success' | 'error' | 'location-error'>('idle');
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [attendanceSession, setAttendanceSession] = useState<{courseId: string, startTime: Date} | null>(null);
-  const [scannedStudents, setScannedStudents] = useState<string[]>([]);
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
-  const scannerElementId = 'qr-scanner';
-  const [courseAttendanceRecords, setCourseAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [scanResult, setScanResult] = useState(null);
+  const [scanStatus, setScanStatus] = useState('idle');
+  const [location, setLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [attendanceSession, setAttendanceSession] = useState(null);
+  const [scannedStudents, setScannedStudents] = useState([]);
+  const scannerRef = useRef(null);
+  const [courseAttendanceRecords, setCourseAttendanceRecords] = useState([]);
   const [browserSupport, setBrowserSupport] = useState(checkBrowserSupport());
 
-  // Mock student database - in production this would come from a backend
+  // Mock student database
   const studentDatabase = [
     { studentId: '2021532666', name: 'Chiyembekezo Daka', program: 'BACHELOR OF INFORMATION AND COMMUNICATION TECHNOLOGIES WITH EDUCATION (B.ICTs.Ed)' },
     { studentId: '2021001235', name: 'Mary Banda', program: 'BACHELOR OF INFORMATION AND COMMUNICATION TECHNOLOGIES WITH EDUCATION (B.ICTs.Ed)' },
@@ -37,7 +29,6 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
   ];
 
   useEffect(() => {
-    // Check browser compatibility
     const support = checkBrowserSupport();
     setBrowserSupport(support);
     
@@ -45,7 +36,6 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
       console.warn('Some browser features are not supported:', support.unsupported);
     }
 
-    // Get user's current location
     if (support.features.geolocation) {
       getLocation()
         .then((position) => {
@@ -64,13 +54,13 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
     }
 
     return () => {
-      if (html5QrcodeRef.current) {
-        html5QrcodeRef.current.stop().catch(console.error);
+      if (isScanning) {
+        Quagga.stop();
       }
     };
   }, []);
 
-  const generateCourseCSV = (courseId: string, records: AttendanceRecord[]) => {
+  const generateCourseCSV = (courseId, records) => {
     const course = courses.find(c => c.id === courseId);
     if (!course || records.length === 0) return;
 
@@ -100,8 +90,8 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
     revokeObjectURL(url);
   };
 
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371e3; // Earth's radius in meters
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -112,7 +102,7 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
       Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distance in meters
+    return R * c;
   };
 
   const startAttendanceSession = () => {
@@ -137,185 +127,137 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
       return;
     }
 
-    // Set scanning state first to render the HTML element
     setIsScanning(true);
     setScanStatus('idle');
 
-    // Wait for the DOM to update
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     try {
-      const html5QrCode = new Html5Qrcode(scannerElementId);
-      html5QrcodeRef.current = html5QrCode;
-
-      // Try different camera configurations for better browser support
-      const cameraConfigs = [
-        { facingMode: 'environment' },
-        { facingMode: 'user' },
-        { facingMode: { exact: 'environment' } },
-        undefined // Let browser choose
-      ];
-
-      let started = false;
-      for (const config of cameraConfigs) {
-        try {
-          await html5QrCode.start(
-            config || { facingMode: 'environment' },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0
-            },
-            (decodedText) => {
-              handleScanSuccess(decodedText);
-            },
-            (error) => {
-              // Handle scan errors silently - this fires frequently during normal operation
-              console.log('Scan error:', error);
-            }
-          );
-          started = true;
-          break;
-        } catch (configError) {
-          console.log('Camera config failed:', config, configError);
-          continue;
+      await Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: scannerRef.current,
+          constraints: {
+            width: 640,
+            height: 480,
+            facingMode: "environment"
+          }
+        },
+        decoder: {
+          readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
         }
-      }
+      });
 
-      if (!started) {
-        throw new Error('Unable to start camera with any configuration');
-      }
-
+      Quagga.onDetected(handleBarcodeDetected);
+      Quagga.start();
     } catch (error) {
-      console.error('Failed to start QR scanner:', error);
+      console.error('Failed to start barcode scanner:', error);
       setIsScanning(false);
       setScanStatus('error');
       setScanResult('Camera access failed. Please check permissions and try again.');
     }
   };
 
-  const stopScanning = async () => {
-    if (html5QrcodeRef.current) {
-      try {
-        await html5QrcodeRef.current.stop();
-        html5QrcodeRef.current = null;
-        setIsScanning(false);
-      } catch (error) {
-        console.error('Failed to stop QR scanner:', error);
-      }
+  const stopScanning = () => {
+    if (isScanning) {
+      Quagga.stop();
+      setIsScanning(false);
     }
   };
 
-  const handleScanSuccess = (decodedText: string) => {
+  const handleBarcodeDetected = (result) => {
     if (!location || !attendanceSession) {
       setScanStatus('location-error');
       return;
     }
 
-    try {
-      // Parse student ID QR code - assuming format: {"studentId": "2021001234", "name": "John Mwanza"}
-      let studentData;
-      try {
-        studentData = JSON.parse(decodedText);
-      } catch {
-        // If not JSON, assume it's just the student ID
-        studentData = { studentId: decodedText };
-      }
-
-      const { studentId } = studentData;
-      
-      // Find student in database
-      const student = studentDatabase.find(s => s.studentId === studentId);
-      if (!student) {
-        setScanStatus('error');
-        setScanResult('Student ID not found in database');
-        return;
-      }
-
-      // Check if student already scanned
-      if (scannedStudents.includes(studentId)) {
-        setScanStatus('error');
-        setScanResult(`${student.name} has already been marked present`);
-        return;
-      }
-
-      // Find the course
-      const course = courses.find(c => c.id === attendanceSession.courseId);
-      if (!course) {
-        setScanStatus('error');
-        setScanResult('Course not found');
-        return;
-      }
-
-      // Check location proximity (within 100 meters)
-      const distance = calculateDistance(
-        location.latitude,
-        location.longitude,
-        course.coordinates.latitude,
-        course.coordinates.longitude
-      );
-
-      if (distance > 100) {
-        setScanStatus('error');
-        setScanResult(`Must be within 100m of ${course.location} to mark attendance`);
-        return;
-      }
-
-      // Determine attendance status based on time elapsed since session start
-      const now = new Date();
-      const sessionDuration = (now.getTime() - attendanceSession.startTime.getTime()) / (1000 * 60); // in minutes
-      let status: 'present' | 'late' = 'present';
-      
-      if (sessionDuration > 15) { // More than 15 minutes after session started
-        status = 'late';
-      }
-
-      // Mark attendance
-      onAttendanceMarked({
-        studentId: student.studentId,
-        studentName: student.name,
-        courseCode: course.code,
-        courseName: course.name,
-        timestamp: now,
-        location,
-        status,
-        scannedBy: user.id // Lecturer/tutor who scanned the student ID
-      });
-
-      // Create attendance record for CSV generation
-      const newRecord: AttendanceRecord = {
-        id: Date.now().toString(),
-        studentId: student.studentId,
-        studentName: student.name,
-        courseCode: course.code,
-        courseName: course.name,
-        timestamp: now,
-        location,
-        status,
-        scannedBy: user.id
-      };
-
-      // Add to scanned students list
-      setScannedStudents(prev => [...prev, studentId]);
-      setCourseAttendanceRecords(prev => [...prev, newRecord]);
-
-      setScanStatus('success');
-      setScanResult(`✓ ${student.name} (${student.studentId}) - ${status.toUpperCase()}`);
-
-      // Auto-clear success message after 2 seconds
-      setTimeout(() => {
-        setScanResult(null);
-        setScanStatus('idle');
-      }, 2000);
-
-    } catch (error) {
+    const studentId = result.codeResult.code;
+    
+    // Find student in database
+    const student = studentDatabase.find(s => s.studentId === studentId);
+    if (!student) {
       setScanStatus('error');
-      setScanResult('Invalid student ID QR code');
+      setScanResult('Student ID not found in database');
+      return;
     }
+
+    // Check if student already scanned
+    if (scannedStudents.includes(studentId)) {
+      setScanStatus('error');
+      setScanResult(`${student.name} has already been marked present`);
+      return;
+    }
+
+    // Find the course
+    const course = courses.find(c => c.id === attendanceSession.courseId);
+    if (!course) {
+      setScanStatus('error');
+      setScanResult('Course not found');
+      return;
+    }
+
+    // Check location proximity (within 100 meters)
+    const distance = calculateDistance(
+      location.latitude,
+      location.longitude,
+      course.coordinates.latitude,
+      course.coordinates.longitude
+    );
+
+    if (distance > 100) {
+      setScanStatus('error');
+      setScanResult(`Must be within 100m of ${course.location} to mark attendance`);
+      return;
+    }
+
+    // Determine attendance status based on time elapsed since session start
+    const now = new Date();
+    const sessionDuration = (now.getTime() - attendanceSession.startTime.getTime()) / (1000 * 60);
+    let status = 'present';
+    
+    if (sessionDuration > 15) {
+      status = 'late';
+    }
+
+    // Mark attendance
+    onAttendanceMarked({
+      studentId: student.studentId,
+      studentName: student.name,
+      courseCode: course.code,
+      courseName: course.name,
+      timestamp: now,
+      location,
+      status,
+      scannedBy: user.id
+    });
+
+    // Create attendance record for CSV generation
+    const newRecord = {
+      id: Date.now().toString(),
+      studentId: student.studentId,
+      studentName: student.name,
+      courseCode: course.code,
+      courseName: course.name,
+      timestamp: now,
+      location,
+      status,
+      scannedBy: user.id
+    };
+
+    // Add to scanned students list
+    setScannedStudents(prev => [...prev, studentId]);
+    setCourseAttendanceRecords(prev => [...prev, newRecord]);
+
+    setScanStatus('success');
+    setScanResult(`✓ ${student.name} (${student.studentId}) - ${status.toUpperCase()}`);
+
+    // Auto-clear success message after 2 seconds
+    setTimeout(() => {
+      setScanResult(null);
+      setScanStatus('idle');
+    }, 2000);
   };
 
   const endAttendanceSession = () => {
-    // Generate CSV file for this course session
     if (attendanceSession && courseAttendanceRecords.length > 0) {
       generateCourseCSV(attendanceSession.courseId, courseAttendanceRecords);
     }
@@ -324,11 +266,6 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
     setScannedStudents([]);
     setCourseAttendanceRecords([]);
     stopScanning();
-    setScanResult(null);
-    setScanStatus('idle');
-  };
-
-  const resetScanner = () => {
     setScanResult(null);
     setScanStatus('idle');
   };
@@ -359,10 +296,10 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <div className="flex items-center space-x-3 mb-6">
-          <QrCode className="w-8 h-8 text-blue-600" />
+          <BarChart className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Scan Student ID Cards</h1>
-            <p className="text-gray-600">Scan student ID QR codes to mark attendance</p>
+            <h1 className="text-2xl font-bold text-gray-800">Scan Student ID Barcodes</h1>
+            <p className="text-gray-600">Scan student ID barcodes to mark attendance</p>
           </div>
         </div>
 
@@ -498,8 +435,8 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
             {isScanning && (
               <div className="space-y-4">
                 <div
-                  id={scannerElementId}
-                  className="w-full rounded-lg overflow-hidden shadow-lg"
+                  ref={scannerRef}
+                  className="w-full h-64 bg-black rounded-lg overflow-hidden"
                 />
                 <button
                   onClick={stopScanning}
@@ -590,7 +527,7 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">2</span>
-            Click "Start Attendance Session\" to begin
+            Click "Start Attendance Session" to begin
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">3</span>
@@ -598,19 +535,19 @@ const ScanAttendance: React.FC<ScanAttendanceProps> = ({ user, courses, onAttend
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">4</span>
-            Scan each student's ID QR code with your device camera
+            Scan each student's ID barcode with your device camera
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">5</span>
-            Students arriving after 15 minutes will be marked as \"Late\"
+            Students arriving after 15 minutes will be marked as "Late"
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">6</span>
-            Click "End Session\" when finished - CSV file will be automatically downloaded
+            Click "End Session" when finished - CSV file will be automatically downloaded
           </li>
           <li className="flex items-start">
             <span className="bg-blue-200 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-3 mt-0.5">7</span>
-            Use "Download CSV\" button to get attendance data during the session
+            Use "Download CSV" button to get attendance data during the session
           </li>
         </ol>
       </div>

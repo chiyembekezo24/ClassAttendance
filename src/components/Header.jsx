@@ -1,20 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, QrCode, History, Users, LogOut, BarChart3 } from 'lucide-react';
-import { User as UserType } from '../App';
+import { User, BarChart, History, Users, LogOut, BarChart3, CreditCard } from 'lucide-react';
 
-interface HeaderProps {
-  user: UserType;
-  onLogout: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+const Header = ({ user, onLogout }) => {
   const location = useLocation();
 
   const navItems = [
     { path: '/', icon: BarChart3, label: 'Dashboard' },
-    { path: '/scan', icon: QrCode, label: 'Scan QR', roles: ['student', 'lecturer'] },
-    { path: '/generate', icon: QrCode, label: 'Generate QR', roles: ['lecturer', 'admin'] },
+    { path: '/scan', icon: BarChart, label: 'Scan Barcode', roles: ['student', 'lecturer'] },
+    { path: '/generate', icon: CreditCard, label: 'Generate Barcode', roles: ['lecturer', 'admin'] },
     { path: '/history', icon: History, label: 'History' },
     { path: '/students', icon: Users, label: 'Students', roles: ['lecturer', 'admin'] },
   ];

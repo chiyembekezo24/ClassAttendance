@@ -1,32 +1,14 @@
 import React, { useState } from 'react';
 import { Users, Search, UserPlus, Edit2, Trash2, BookOpen, TrendingUp } from 'lucide-react';
-import { User } from '../App';
 
-interface StudentManagementProps {
-  user: User;
-}
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  studentId: string;
-  program: string;
-  year: number;
-  status: 'active' | 'inactive';
-  attendanceRate: number;
-  totalClasses: number;
-  attendedClasses: number;
-}
-
-const StudentManagement: React.FC<StudentManagementProps> = ({ user }) => {
+const StudentManagement = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterProgram, setFilterProgram] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterProgram, setFilterProgram] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Mock student data
-  const [students] = useState<Student[]>([
+  const [students] = useState([
     {
       id: '1',
       name: 'Chiyembekezo Daka',
@@ -227,7 +209,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ user }) => {
 
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
+              onChange={(e) => setFilterStatus(e.target.value)}
               className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
             >
               <option value="all">All Status</option>
